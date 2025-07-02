@@ -23,6 +23,7 @@ This is a simple C++ project that implements **Huffman Encoding and Decoding** f
 ├── decode.cpp         # Main program to decompress (decode)
 ├── huffman.cpp        # Class implementation
 ├── huffman.hpp        # Class declaration and data structures
+├── index.html         # Huffman tree visualizer (Bootstrap + JS)
 ├── example.txt        # Sample input file
 ├── compressed.huf     # Compressed output
 ├── output.txt         # Final decompressed output
@@ -55,7 +56,17 @@ g++ decode.cpp huffman.cpp -o decode
 ---bash
 ./decode compressed.huf output.txt
 
+##  Huffman Tree Visualizer (Bonus)
 
+A browser-based Huffman Tree visualizer built with **HTML, Bootstrap 5, and JavaScript**.
+
+###  How to use:
+1. Open `index.html` in your browser:
+   ---bash
+   start index.html
+   
+2. Enter sample text and click **Generate Tree**.
+3. Visual Huffman Tree will be rendered on screen.
 
 
 ##  Example

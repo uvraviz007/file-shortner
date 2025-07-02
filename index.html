@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huffman Tree Visualizer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5; /* Lighter background */
+        }
+        .node {
+            /* Bootstrap-like card styling */
+            background-color: #ffffff; /* White background */
+            border: 1px solid #dee2e6; /* Light grey border */
+            border-radius: .5rem; /* Rounded corners */
+            padding: 1rem 1.5rem; /* More padding */
+            margin: 0.75rem; /* Spacing between nodes */
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); /* Subtle shadow */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            min-width: 80px; /* Ensure nodes have a minimum width */
+            display: inline-flex; /* Use flex for content centering within node */
+            align-items: center;
+            justify-content: center;
+            flex-direction: column; /* Stack char and freq vertically if needed */
+            font-size: 1.1em; /* Slightly larger text */
+            color: #343a40; /* Darker text for readability */
+        }
+
+        .node:hover {
+            transform: translateY(-3px); /* Lift effect on hover */
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); /* More prominent shadow on hover */
+        }
+
+        /* Styling for the non-leaf nodes (internal nodes) */
+        .node.internal {
+            background-color: #e9ecef; /* Light grey for internal nodes */
+            border-color: #adb5bd;
+        }
+        .node.internal span.char-placeholder {
+            font-size: 1.5em; /* Larger placeholder */
+            line-height: 1; /* Adjust line height */
+            margin-bottom: 5px; /* Space between placeholder and freq */
+            color: #6c757d; /* Darker grey for placeholder */
+        }
+
+        /* Tree container styling */
+        #treeContainer {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column; /* Stack levels vertically */
+            align-items: center; /* Center the entire tree */
+            padding: 20px;
+            background-color: #e2e6ea; /* Slightly darker background for the tree area */
+            border-radius: 1rem; /* More rounded corners */
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1); /* Inner shadow */
+        }
+
+        /* Container for children nodes at each level */
+        .children-level {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap; /* Allow children to wrap */
+            margin-top: 20px; /* Space between parent and children level */
+            width: 100%; /* Take full width to center children */
+        }
+
+        /* No direct lines will be drawn with this setup,
+           as it requires more advanced SVG or Canvas rendering
+           or a tree visualization library.
+           The pseudo-elements are removed as they don't serve a clear purpose
+           in this flex-based "tree" without actual connection logic.
+        */
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <h1 class="text-center mb-4 text-primary">🔠 Huffman Tree Visualizer</h1>
+        <div class="input-group mb-3 shadow-sm">
+            <input type="text" class="form-control form-control-lg" id="inputText" placeholder="Enter text to compress (e.g., 'hello world')" aria-label="Enter text">
+            <button class="btn btn-primary btn-lg ms-2" onclick="generateTree()">Generate Tree</button>
+        </div>
+        <div id="treeContainer">
+            <p class="text-muted text-center">Enter text above to visualize its Huffman tree.</p>
+        </div>
+        
+        <div class="mt-5 pt-3 border-top text-center text-muted">
+            <small>&copy; 2025 Huffman Visualizer. Built with Bootstrap 5.</small>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        class Node {
+            constructor(char, freq, left = null, right = null) {
+                this.char = char;
+                this.freq = freq;
+                this.left = left;
+                this.right = right;
+            }
+        }
+
+        function buildFrequencyMap(str) {
+            const freq = {};
+            for (const ch of str) {
+                freq[ch] = (freq[ch] || 0) + 1;
+            }
+            // Create Node objects from frequency map
+            return Object.entries(freq).map(([char, freq]) => new Node(char, freq));
+        }
+
+        function buildHuffmanTree(nodes) {
+            // Sort nodes by frequency initially
+            const pq = [...nodes].sort((a, b) => a.freq - b.freq);
+
+            while (pq.length > 1) {
+                // Get the two lowest frequency nodes
+                const left = pq.shift();
+                const right = pq.shift();
+
+                // Create a new internal node
+                const merged = new Node(null, left.freq + right.freq, left, right);
+                
+                // Add the new node back into the array and maintain sort order
+                let inserted = false;
+                for (let i = 0; i < pq.length; i++) {
+                    if (merged.freq < pq[i].freq) {
+                        pq.splice(i, 0, merged);
+                        inserted = true;
+                        break;
+                    }
+                }
+                if (!inserted) {
+                    pq.push(merged); // Add to end if it's the largest
+                }
+            }
+            return pq[0]; // The root of the Huffman tree
+        }
+
+        function renderTree(node, parentElement) {
+            if (!node) return;
+
+            const nodeElement = document.createElement("div");
+            nodeElement.className = "node";
+            
+            // Add a class for internal nodes for different styling
+            if (node.char === null) {
+                nodeElement.classList.add("internal");
+                const placeholder = document.createElement("span");
+                placeholder.className = "char-placeholder";
+                placeholder.innerText = "•"; // Dot for internal node
+                nodeElement.appendChild(placeholder);
+            } else {
+                nodeElement.innerText = node.char; // Only character for leaf node
+            }
+            
+            const freqElement = document.createElement("span");
+            freqElement.className = node.char === null ? "text-muted small" : "small text-info"; // Different style for frequency
+            freqElement.innerText = `(${node.freq})`;
+            nodeElement.appendChild(freqElement);
+
+            parentElement.appendChild(nodeElement);
+
+            // If this node has children, create a new container for them
+            if (node.left || node.right) {
+                const childrenLevelContainer = document.createElement("div");
+                childrenLevelContainer.className = "children-level";
+                
+                renderTree(node.left, childrenLevelContainer);
+                renderTree(node.right, childrenLevelContainer);
+                
+                parentElement.appendChild(childrenLevelContainer);
+            }
+        }
+
+        function generateTree() {
+            const textInput = document.getElementById("inputText");
+            const text = textInput.value.trim();
+            const container = document.getElementById("treeContainer");
+            container.innerHTML = ""; // Clear previous tree
+
+            if (!text) {
+                container.innerHTML = "<p class='text-muted text-center'>Please enter some text to generate the tree.</p>";
+                return;
+            }
+
+            try {
+                const freqNodes = buildFrequencyMap(text);
+                if (freqNodes.length === 0) {
+                     container.innerHTML = "<p class='text-muted text-center'>No characters found in the input.</p>";
+                     return;
+                }
+                if (freqNodes.length === 1) { // Handle single character input
+                    const el = document.createElement("div");
+                    el.className = "node";
+                    el.innerHTML = `${freqNodes[0].char} <small class="text-info">(${freqNodes[0].freq})</small>`;
+                    container.appendChild(el);
+                    return;
+                }
+
+                const treeRoot = buildHuffmanTree(freqNodes);
+                renderTree(treeRoot, container);
+            } catch (e) {
+                console.error("Error generating tree:", e);
+                container.innerHTML = `<p class='text-danger text-center'>An error occurred: ${e.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
